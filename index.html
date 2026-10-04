@@ -76,6 +76,7 @@
       height: 100%;
       width: 0%;
       background: #6b8e5a;
+      transition: width 0.05s;
     }
 
     #result {
@@ -87,8 +88,12 @@
     }
 
     .pitch {
-      font-size: 28px;
+      font-size: 30px;
       font-weight: bold;
+    }
+
+    .clarity {
+      font-size: 18px;
     }
   </style>
 </head>
@@ -98,6 +103,7 @@
 <div class="card">
 
   <h1>林晓雅</h1>
+
   <p>Lin Xiaoya — مربی و دوست چینی تو 🌱</p>
 
   <div class="chinese">你好</div>
@@ -108,10 +114,14 @@
   <p>Hello</p>
 
   <button id="listenBtn">🔊 گوش بده</button>
+
   <button id="micBtn">🎙️ حالا تو بگو</button>
+
   <button id="stopBtn">⏹️ توقف</button>
 
-  <div id="status">آماده‌ام؛ بگو 😊</div>
+  <div id="status">
+    آماده‌ام؛ بگو 😊
+  </div>
 
   <div id="level">
     <div id="levelBar"></div>
@@ -123,252 +133,327 @@
 
 </div>
 
-<script>
+
+<script type="module">
+
+import { PitchDetector }
+  from "https://esm.sh/pitchy@4";
+
 
 let audioContext = null;
 let analyser = null;
 let microphone = null;
 let stream = null;
+let detector = null;
+let input = null;
 let animationId = null;
 
-const status = document.getElementById("status");
-const result = document.getElementById("result");
-const levelBar = document.getElementById("levelBar");
+
+const status =
+  document.getElementById("status");
+
+const result =
+  document.getElementById("result");
+
+const levelBar =
+  document.getElementById("levelBar");
 
 
-/* پخش صدای چینی */
+/* صدای 林晓雅 */
 
-document.getElementById("listenBtn").addEventListener("click", () => {
+document
+  .getElementById("listenBtn")
+  .addEventListener("click", () => {
 
-  const speech = new SpeechSynthesisUtterance("你好");
+    const speech =
+      new SpeechSynthesisUtterance("你好");
 
-  speech.lang = "zh-CN";
-  speech.rate = 0.8;
+    speech.lang = "zh-CN";
+    speech.rate = 0.8;
 
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(speech);
+    window.speechSynthesis.cancel();
 
-  status.textContent = "🔊 林晓雅 گفت: 你好 😊";
+    window.speechSynthesis.speak(speech);
 
-});
+    status.textContent =
+      "🔊 林晓雅 گفت: 你好 😊";
+
+  });
 
 
 /* شروع میکروفون */
 
-document.getElementById("micBtn").addEventListener("click", async () => {
+document
+  .getElementById("micBtn")
+  .addEventListener("click", async () => {
 
-  try {
+    try {
 
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: true
-    });
-
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-    await audioContext.resume();
-
-    analyser = audioContext.createAnalyser();
-
-    analyser.fftSize = 4096;
-    analyser.smoothingTimeConstant = 0.2;
-
-    microphone = audioContext.createMediaStreamSource(stream);
-
-    microphone.connect(analyser);
-
-    status.textContent = "🎙️ دارم گوش می‌دم... بگو!";
-
-    result.innerHTML =
-      "🎧 صدای تو در حال دریافت است...";
-
-    analyseVoice();
-
-  } catch (error) {
-
-    status.textContent =
-      "❌ دسترسی به میکروفون برقرار نشد.";
-
-    result.innerHTML =
-      "لطفاً اجازه استفاده از میکروفون را بررسی کن.";
-
-    console.log(error);
-
-  }
-
-});
+      status.textContent =
+        "🎙️ در حال آماده شدن میکروفون...";
 
 
-/* تشخیص تقریبی Pitch */
+      stream =
+        await navigator.mediaDevices
+          .getUserMedia({
+            audio: true
+          });
 
-function detectPitch(buffer, sampleRate) {
 
-  let SIZE = buffer.length;
+      audioContext =
+        new (
+          window.AudioContext ||
+          window.webkitAudioContext
+        )();
 
-  let rms = 0;
 
-  for (let i = 0; i < SIZE; i++) {
-    rms += buffer[i] * buffer[i];
-  }
+      /*
+        Chrome ممکن است AudioContext
+        را تا بعد از تعامل کاربر
+        متوقف نگه دارد.
+      */
 
-  rms = Math.sqrt(rms / SIZE);
+      await audioContext.resume();
 
-  if (rms < 0.01) {
-    return null;
-  }
 
-  let bestOffset = -1;
-  let bestCorrelation = 0;
+      analyser =
+        audioContext.createAnalyser();
 
-  for (let offset = 20; offset < 1000; offset++) {
+      analyser.fftSize = 2048;
 
-    let correlation = 0;
+      analyser.smoothingTimeConstant = 0.1;
 
-    for (let i = 0; i < SIZE - offset; i++) {
 
-      correlation +=
-        buffer[i] * buffer[i + offset];
+      microphone =
+        audioContext
+          .createMediaStreamSource(stream);
+
+
+      microphone.connect(analyser);
+
+
+      /*
+        Pitchy باید دقیقاً همان اندازه
+        ورودی را دریافت کند که detector
+        انتظار دارد.
+      */
+
+      detector =
+        PitchDetector
+          .forFloat32Array(
+            analyser.fftSize
+          );
+
+
+      detector.minVolumeDecibels = -40;
+
+
+      input =
+        new Float32Array(
+          detector.inputLength
+        );
+
+
+      status.textContent =
+        "🎙️ دارم گوش می‌دم... بگو!";
+
+
+      result.innerHTML =
+        "🎧 صدای تو را دریافت می‌کنم...";
+
+
+      updatePitch();
+
 
     }
 
-    correlation =
-      correlation / (SIZE - offset);
+    catch (error) {
 
-    if (correlation > bestCorrelation) {
+      console.error(error);
 
-      bestCorrelation = correlation;
-      bestOffset = offset;
+      status.textContent =
+        "❌ دسترسی به میکروفون برقرار نشد.";
+
+      result.innerHTML =
+        "لطفاً اجازه استفاده از میکروفون را بررسی کن.";
 
     }
 
-  }
+  });
+
+
+/* تحلیل Pitch */
+
+function updatePitch() {
 
   if (
-    bestOffset === -1 ||
-    bestCorrelation < 0.01
+    !analyser ||
+    !detector ||
+    !audioContext
   ) {
-    return null;
-  }
-
-  return sampleRate / bestOffset;
-
-}
-
-
-/* تحلیل صدا */
-
-function analyseVoice() {
-
-  if (!analyser || !audioContext) {
     return;
   }
 
-  const buffer =
-    new Float32Array(analyser.fftSize);
 
-  analyser.getFloatTimeDomainData(buffer);
+  analyser.getFloatTimeDomainData(input);
 
 
-  /* شدت صدا */
+  const [
+    pitch,
+    clarity
+  ] =
+    detector.findPitch(
+      input,
+      audioContext.sampleRate
+    );
+
+
+  /*
+    محاسبه شدت صدا
+  */
 
   let sum = 0;
 
-  for (let i = 0; i < buffer.length; i++) {
+  for (
+    let i = 0;
+    i < input.length;
+    i++
+  ) {
 
-    sum += buffer[i] * buffer[i];
+    sum += input[i] * input[i];
 
   }
 
+
   const rms =
-    Math.sqrt(sum / buffer.length);
+    Math.sqrt(
+      sum / input.length
+    );
+
 
   const volume =
-    Math.min(rms * 500, 100);
+    Math.min(
+      rms * 500,
+      100
+    );
+
 
   levelBar.style.width =
     volume + "%";
 
 
-  /* Pitch */
+  /*
+    اگر Pitch معتبر باشد
+  */
 
-  const pitch =
-    detectPitch(
-      buffer,
-      audioContext.sampleRate
-    );
-
-
-  if (pitch) {
+  if (
+    pitch > 50 &&
+    pitch < 600 &&
+    clarity > 0.5
+  ) {
 
     result.innerHTML =
-      "🎧 صدای تو دریافت می‌شود.<br>" +
+
+      "🎧 صدای تو دریافت می‌شود.<br><br>" +
+
       "<span class='pitch'>" +
       Math.round(pitch) +
       " Hz" +
       "</span><br>" +
-      "زیر و بمی تقریبی صدای تو";
 
-  } else {
+      "<span class='clarity'>" +
+      "وضوح تشخیص: " +
+      Math.round(clarity * 100) +
+      "%" +
+      "</span>";
+
+  }
+
+  else {
 
     result.innerHTML =
-      "🎧 صدای تو دریافت می‌شود.<br>" +
-      "در حال پیدا کردن Pitch...";
+      "🎧 صدای تو دریافت می‌شود...<br>" +
+      "در حال پیدا کردن Pitch واضح‌تر";
 
   }
 
 
   animationId =
-    requestAnimationFrame(analyseVoice);
+    requestAnimationFrame(
+      updatePitch
+    );
 
 }
 
 
 /* توقف */
 
-document.getElementById("stopBtn").addEventListener("click", () => {
+document
+  .getElementById("stopBtn")
+  .addEventListener("click", () => {
 
-  if (animationId) {
 
-    cancelAnimationFrame(animationId);
+    if (animationId) {
 
-    animationId = null;
+      cancelAnimationFrame(
+        animationId
+      );
 
-  }
+      animationId = null;
 
-  if (microphone) {
+    }
 
-    microphone.disconnect();
 
-    microphone = null;
+    if (microphone) {
 
-  }
+      microphone.disconnect();
 
-  if (stream) {
+      microphone = null;
 
-    stream.getTracks().forEach(track => {
-      track.stop();
-    });
+    }
 
-    stream = null;
 
-  }
+    if (stream) {
 
-  if (audioContext) {
+      stream
+        .getTracks()
+        .forEach(track => {
+          track.stop();
+        });
 
-    audioContext.close();
+      stream = null;
 
-    audioContext = null;
+    }
 
-  }
 
-  levelBar.style.width = "0%";
+    if (audioContext) {
 
-  status.textContent =
-    "⏹️ گوش دادن متوقف شد.";
+      audioContext.close();
 
-  result.innerHTML =
-    "تست صدا تمام شد. دوباره می‌توانی امتحان کنی.";
+      audioContext = null;
 
-});
+    }
+
+
+    analyser = null;
+
+    detector = null;
+
+    input = null;
+
+
+    levelBar.style.width =
+      "0%";
+
+
+    status.textContent =
+      "⏹️ گوش دادن متوقف شد.";
+
+
+    result.innerHTML =
+      "تست صدا تمام شد. دوباره می‌توانی امتحان کنی.";
+
+  });
 
 </script>
 
