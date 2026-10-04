@@ -145,6 +145,7 @@ let analyser = null;
 let microphone = null;
 let stream = null;
 let detector = null;
+let pitchHistory = [];
 let input = null;
 let animationId = null;
 
@@ -306,7 +307,10 @@ function updatePitch() {
       input,
       audioContext.sampleRate
     );
-
+  pitchHistory.push(pitch);
+  if (pitchHistory.length > 100) {
+  pitchHistory.shift();
+}
 
   /*
     محاسبه شدت صدا
@@ -346,18 +350,23 @@ function updatePitch() {
     اگر Pitch معتبر باشد
   */
 
-  if (
-    pitch > 50 &&
-    pitch < 600 &&
-    clarity > 0.5
-  ) {
+ if (
+  pitch > 50 &&
+  pitch < 600 &&
+  clarity > 0.5
+) {
 
-    result.innerHTML =
+  const recentPitches =
+    pitchHistory
+      .filter(p => p > 50 && p < 600)
+      .slice(-20);
 
-      "🎧 صدای تو دریافت می‌شود.<br><br>" +
+  result.innerHTML =
 
-      "<span class='pitch'>" +
-      Math.round(pitch) +
+    "🎧 صدای تو دریافت می‌شود.<br><br>" +
+
+    "<span class='pitch'>" +
+    Math.round(pitch) +
       " Hz" +
       "</span><br>" +
 
