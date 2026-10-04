@@ -360,7 +360,15 @@ function updatePitch() {
     pitchHistory
       .filter(p => p > 50 && p < 600)
       .slice(-20);
+   
+ let change = 0;  
+   
+if (recentPitches.length >= 10) {
+  const first = recentPitches[0];
+  const last = recentPitches[recentPitches.length - 1];
 
+  change = last - first;
+}
   result.innerHTML =
 
     "🎧 صدای تو دریافت می‌شود.<br><br>" +
