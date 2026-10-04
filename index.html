@@ -1,200 +1,122 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>林晓雅 · Lin Xiaoya</title>
+  <title>林晓雅 - Lin Xiaoya</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #f5f7f2, #e8f0e8);
-      color: #26352b;
-      min-height: 100vh;
-    }
-
-    .app {
-      max-width: 500px;
-      margin: auto;
-      padding: 24px 18px 40px;
-    }
-
-    .header {
+      background: #f5f7f2;
       text-align: center;
-      margin-bottom: 25px;
-    }
-
-    .name {
-      font-size: 32px;
-      font-weight: bold;
-    }
-
-    .latin {
-      direction: ltr;
-      font-size: 16px;
-      margin-top: 5px;
-      color: #657268;
+      padding: 30px 15px;
+      color: #333;
     }
 
     .card {
-      background: rgba(255,255,255,0.9);
-      border-radius: 24px;
-      padding: 25px 20px;
-      margin-bottom: 18px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-bottom: 5px;
     }
 
     .chinese {
-      direction: ltr;
-      text-align: center;
       font-size: 48px;
-      margin: 10px 0;
+      margin: 20px 0 5px;
     }
 
     .pinyin {
-      direction: ltr;
-      text-align: center;
-      font-size: 25px;
-      color: #52705c;
-    }
-
-    .persian {
-      text-align: center;
-      font-size: 17px;
-      margin-top: 8px;
-    }
-
-    .english {
-      direction: ltr;
-      text-align: center;
-      color: #777;
-      margin-top: 5px;
+      font-size: 22px;
+      color: #555;
     }
 
     button {
-      width: 100%;
       border: none;
-      border-radius: 16px;
-      padding: 15px;
-      margin-top: 12px;
-      font-size: 17px;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin: 8px;
+      font-size: 16px;
       cursor: pointer;
     }
 
-    .listen {
-      background: #dcebdd;
-      color: #29442f;
+    #listenBtn {
+      background: #e8f0df;
     }
 
-    .record {
-      background: #52705c;
-      color: white;
+    #micBtn {
+      background: #dcefe8;
     }
 
-    .stop {
-      background: #e7dada;
-      color: #633d3d;
+    #stopBtn {
+      background: #f2dddd;
     }
 
-    button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .status {
-      text-align: center;
-      margin-top: 18px;
-      min-height: 25px;
+    #status {
+      margin-top: 20px;
       font-weight: bold;
     }
 
-    .result {
-      display: none;
-      margin-top: 18px;
-      padding: 18px;
-      background: #f2f6f2;
-      border-radius: 16px;
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f7f7f7;
+      border-radius: 12px;
+      min-height: 50px;
     }
 
-    .result h3 {
-      margin-top: 0;
+    #level {
+      margin: 15px auto;
+      width: 90%;
+      height: 20px;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
     }
 
-    .value {
-      direction: ltr;
-      text-align: center;
-      font-size: 28px;
-      margin: 10px;
-    }
-
-    .note {
-      font-size: 14px;
-      line-height: 1.8;
-      color: #657268;
-      margin-top: 15px;
+    #levelBar {
+      height: 100%;
+      width: 0%;
+      background: #6b8e5a;
+      transition: width 0.05s;
     }
   </style>
 </head>
 
 <body>
 
-<div class="app">
+<div class="card">
 
-  <div class="header">
-    <div class="name">林晓雅</div>
-    <div class="latin">Lín Xiǎoyǎ · Mandarin Coach</div>
+  <h1>林晓雅</h1>
+  <p>Lin Xiaoya — مربی و دوست چینی تو 🌱</p>
+
+  <div class="chinese">你好</div>
+
+  <div class="pinyin">Nǐ hǎo</div>
+
+  <p>نی هاو — سلام</p>
+  <p>Hello</p>
+
+  <button id="listenBtn">🔊 گوش بده</button>
+
+  <button id="micBtn">🎙️ حالا تو بگو</button>
+
+  <button id="stopBtn">⏹️ توقف</button>
+
+  <div id="status">آماده‌ام؛ بگو 😊</div>
+
+  <div id="level">
+    <div id="levelBar"></div>
   </div>
 
-  <div class="card">
-
-    <div class="chinese">你好</div>
-
-    <div class="pinyin">Nǐ hǎo</div>
-
-    <div class="persian">نی هاو — سلام</div>
-
-    <div class="english">Hello</div>
-
-    <button class="listen" onclick="speakChinese()">
-      🔊 گوش بده
-    </button>
-
-    <button class="record" id="recordButton" onclick="startRecording()">
-      🎙️ حالا تو بگو
-    </button>
-
-    <button class="stop" id="stopButton" onclick="stopRecording()" disabled>
-      ⏹️ توقف
-    </button>
-
-    <div class="status" id="status">
-      آماده‌ای؟ 😊
-    </div>
-
-    <div class="result" id="result">
-
-      <h3>📊 بررسی اولیه‌ی صدا</h3>
-
-      <div>Pitch تقریبی صدای تو:</div>
-
-      <div class="value" id="pitchValue">
-        --
-      </div>
-
-      <div id="pitchMessage"></div>
-
-      <div class="note">
-        این فقط اولین آزمایش است و هنوز ارزیابی کامل تلفظ Mandarin نیست.
-        در مراحل بعدی، تحلیل Tone و تلفظ هجاها را دقیق‌تر می‌کنیم.
-      </div>
-
-    </div>
-
+  <div id="result">
+    هنوز صدایی دریافت نشده.
   </div>
 
 </div>
@@ -204,31 +126,31 @@
 let audioContext;
 let analyser;
 let microphone;
-let animationFrame;
-let stream;
+let animationId;
 
-function speakChinese() {
+const status = document.getElementById("status");
+const result = document.getElementById("result");
+const levelBar = document.getElementById("levelBar");
 
-  if (!("speechSynthesis" in window)) {
-    alert("مرورگر شما قابلیت پخش گفتار را ندارد.");
-    return;
-  }
+document.getElementById("listenBtn").addEventListener("click", () => {
 
-  const utterance = new SpeechSynthesisUtterance("你好");
+  const speech = new SpeechSynthesisUtterance("你好");
 
-  utterance.lang = "zh-CN";
-  utterance.rate = 0.75;
-  utterance.pitch = 1;
+  speech.lang = "zh-CN";
+  speech.rate = 0.8;
 
-  speechSynthesis.cancel();
-  speechSynthesis.speak(utterance);
-}
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(speech);
 
-async function startRecording() {
+  status.textContent = "林晓雅 گفت: 你好 😊";
+
+});
+
+document.getElementById("micBtn").addEventListener("click", async () => {
 
   try {
 
-    stream = await navigator.mediaDevices.getUserMedia({
+    const stream = await navigator.mediaDevices.getUserMedia({
       audio: true
     });
 
@@ -237,130 +159,84 @@ async function startRecording() {
     analyser = audioContext.createAnalyser();
 
     analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.5;
 
     microphone = audioContext.createMediaStreamSource(stream);
 
     microphone.connect(analyser);
 
-    document.getElementById("recordButton").disabled = true;
-    document.getElementById("stopButton").disabled = false;
+    status.textContent = "🎙️ دارم گوش می‌دم... بگو!";
 
-    document.getElementById("status").innerText =
-      "🎙️ دارم گوش می‌دم... بگو: 你好";
+    result.innerHTML = "صدای تو در حال دریافت است...";
 
-    document.getElementById("result").style.display = "none";
-
-    analysePitch();
+    measureSound();
 
   } catch (error) {
 
-    document.getElementById("status").innerText =
-      "❌ دسترسی به میکروفون داده نشد.";
+    status.textContent = "❌ دسترسی به میکروفون برقرار نشد.";
 
-    console.error(error);
+    result.innerHTML =
+      "لطفاً اجازه استفاده از میکروفون را بررسی کن.";
+
+    console.log(error);
 
   }
+
+});
+
+function measureSound() {
+
+  const data = new Uint8Array(analyser.fftSize);
+
+  analyser.getByteTimeDomainData(data);
+
+  let sum = 0;
+
+  for (let i = 0; i < data.length; i++) {
+
+    const value = (data[i] - 128) / 128;
+
+    sum += value * value;
+
+  }
+
+  const volume = Math.sqrt(sum / data.length);
+
+  const percent = Math.min(volume * 500, 100);
+
+  levelBar.style.width = percent + "%";
+
+  result.innerHTML =
+    "🎧 صدای تو دریافت می‌شود.<br>" +
+    "شدت تقریبی صدا: " +
+    Math.round(volume * 100) +
+    "%";
+
+  animationId = requestAnimationFrame(measureSound);
 
 }
 
-function stopRecording() {
+document.getElementById("stopBtn").addEventListener("click", () => {
 
-  if (stream) {
-
-    stream.getTracks().forEach(track => track.stop());
-
+  if (animationId) {
+    cancelAnimationFrame(animationId);
   }
 
-  if (animationFrame) {
-
-    cancelAnimationFrame(animationFrame);
-
+  if (microphone) {
+    microphone.disconnect();
   }
 
   if (audioContext) {
-
     audioContext.close();
-
   }
 
-  document.getElementById("recordButton").disabled = false;
-  document.getElementById("stopButton").disabled = true;
+  levelBar.style.width = "0%";
 
-  document.getElementById("status").innerText =
-    "✅ ضبط تمام شد.";
+  status.textContent = "⏹️ گوش دادن متوقف شد.";
 
-}
+  result.innerHTML =
+    "تست صدا تمام شد. دوباره می‌توانی امتحان کنی.";
 
-function analysePitch() {
-
-  if (!analyser) return;
-
-  const buffer = new Float32Array(analyser.fftSize);
-
-  analyser.getFloatTimeDomainData(buffer);
-
-  const pitch = detectPitch(buffer, audioContext.sampleRate);
-
-  if (pitch > 0) {
-
-    document.getElementById("pitchValue").innerText =
-      Math.round(pitch) + " Hz";
-
-    document.getElementById("pitchMessage").innerText =
-      "🎵 صدای تو شناسایی شد. فعلاً داریم Pitch را اندازه می‌گیریم.";
-
-  }
-
-  animationFrame = requestAnimationFrame(analysePitch);
-
-}
-
-function detectPitch(buffer, sampleRate) {
-
-  let SIZE = buffer.length;
-
-  let rms = 0;
-
-  for (let i = 0; i < SIZE; i++) {
-
-    rms += buffer[i] * buffer[i];
-
-  }
-
-  rms = Math.sqrt(rms / SIZE);
-
-  if (rms < 0.01) return -1;
-
-  let bestCorrelation = 0;
-  let bestOffset = -1;
-
-  for (let offset = 20; offset < 1000; offset++) {
-
-    let correlation = 0;
-
-    for (let i = 0; i < SIZE - offset; i++) {
-
-      correlation += buffer[i] * buffer[i + offset];
-
-    }
-
-    correlation /= SIZE - offset;
-
-    if (correlation > bestCorrelation) {
-
-      bestCorrelation = correlation;
-      bestOffset = offset;
-
-    }
-
-  }
-
-  if (bestOffset === -1) return -1;
-
-  return sampleRate / bestOffset;
-
-}
+});
 
 </script>
 
