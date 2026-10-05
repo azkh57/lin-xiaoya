@@ -416,13 +416,19 @@ result.innerHTML =
 
   }
 
-  else {
+ else {
 
-    result.innerHTML =
-      "🎧 صدای تو دریافت می‌شود...<br>" +
-      "در حال پیدا کردن Pitch واضح‌تر";
+  result.innerHTML =
+    "🎧 صدای تو دریافت می‌شود...<br>" +
+    "Pitch هنوز واضح تشخیص داده نشده<br><br>" +
+    "Pitch: " +
+    Math.round(pitch) +
+    " Hz<br>" +
+    "وضوح: " +
+    Math.round(clarity * 100) +
+    "%";
 
-  }
+}
 
 
   animationId =
