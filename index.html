@@ -401,16 +401,21 @@ if (recentPitches.length >= 20) {
    
 result.innerHTML =
 
-  "🎧 صدای تو دریافت می‌شود.<br><br>" +
+  "🎧 صدای تو دریافت می‌شود...<br><br>" +
 
   "<span class='pitch'>" +
-Math.round(
-  pitchHistory.length > 0
-    ? pitchHistory.slice(-10).reduce((a, b) => a + b, 0) /
-      pitchHistory.slice(-10).length
-    : pitch
-) +
-" Hz" +
+  Math.round(
+    pitchHistory.length > 0
+      ? (() => {
+          const values = pitchHistory
+            .slice(-10)
+            .sort((a, b) => a - b);
+
+          return values[Math.floor(values.length / 2)];
+        })()
+      : pitch
+  ) +
+  " Hz" +
   "</span><br>" +
 
   "<span class='clarity'>" +
@@ -424,7 +429,7 @@ Math.round(
   toneDirection +
   "</span>";
 
-  }
+}
 
  else {
 
