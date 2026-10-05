@@ -383,6 +383,9 @@ if (change > 20) {
 } else if (change < -20) {
   toneDirection = "رو به پایین ↘️";
 }
+   if (midChange < -10 && change > 10) {
+  toneDirection = "پایین و سپس بالا ↘️↗️";
+}
 result.innerHTML =
 
   "🎧 صدای تو دریافت می‌شود.<br><br>" +
