@@ -139,13 +139,24 @@
 import { PitchDetector }
   from "https://esm.sh/pitchy@4";
 
-
+console.log("ToneMirror test ready");
+  
 let audioContext = null;
 let analyser = null;
 let microphone = null;
 let stream = null;
 let detector = null;
 let pitchHistory = [];
+  function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
+  return sorted[mid];
+}
 let input = null;
 let animationId = null;
 
