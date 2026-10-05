@@ -363,13 +363,17 @@ const recentPitches =
       .filter(p => p > 120 && p < 600)
       .slice(-20);
    
- let change = 0;  
-   
+let change = 0;
+let midChange = 0;
+
 if (recentPitches.length >= 10) {
   const first = recentPitches[0];
+  const middle =
+    recentPitches[Math.floor(recentPitches.length / 2)];
   const last = recentPitches[recentPitches.length - 1];
 
   change = last - first;
+  midChange = middle - first;
 }
    
    let toneDirection = "ثابت";
