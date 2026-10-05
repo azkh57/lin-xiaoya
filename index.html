@@ -377,20 +377,25 @@ if (change > 20) {
 } else if (change < -20) {
   toneDirection = "رو به پایین ↘️";
 }
-  result.innerHTML =
+result.innerHTML =
 
-    "🎧 صدای تو دریافت می‌شود.<br><br>" +
+  "🎧 صدای تو دریافت می‌شود.<br><br>" +
 
-    "<span class='pitch'>" +
-    Math.round(pitch) +
-      " Hz" +
-      "</span><br>" +
+  "<span class='pitch'>" +
+  Math.round(pitch) +
+  " Hz" +
+  "</span><br>" +
 
-      "<span class='clarity'>" +
-      "وضوح تشخیص: " +
-      Math.round(clarity * 100) +
-      "%" +
-      "</span>";
+  "<span class='clarity'>" +
+  "وضوح تشخیص: " +
+  Math.round(clarity * 100) +
+  "%" +
+  "</span><br>" +
+
+  "<span class='clarity'>" +
+  "مسیر Pitch: " +
+  toneDirection +
+  "</span>";
 
   }
 
