@@ -358,9 +358,9 @@ if (pitch > 120 && pitch < 600 && clarity > 0.5) {
   clarity > 0.5
 ) {
 
-  const recentPitches =
+const recentPitches =
     pitchHistory
-      .filter(p => p > 50 && p < 600)
+      .filter(p => p > 120 && p < 600)
       .slice(-20);
    
  let change = 0;  
