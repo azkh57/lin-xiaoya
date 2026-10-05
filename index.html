@@ -369,6 +369,14 @@ if (recentPitches.length >= 10) {
 
   change = last - first;
 }
+   
+   let toneDirection = "ثابت";
+
+if (change > 20) {
+  toneDirection = "رو به بالا ↗️";
+} else if (change < -20) {
+  toneDirection = "رو به پایین ↘️";
+}
   result.innerHTML =
 
     "🎧 صدای تو دریافت می‌شود.<br><br>" +
