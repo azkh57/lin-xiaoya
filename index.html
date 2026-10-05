@@ -404,8 +404,13 @@ result.innerHTML =
   "🎧 صدای تو دریافت می‌شود.<br><br>" +
 
   "<span class='pitch'>" +
-  Math.round(pitch) +
-  " Hz" +
+Math.round(
+  pitchHistory.length > 0
+    ? pitchHistory.slice(-10).reduce((a, b) => a + b, 0) /
+      pitchHistory.slice(-10).length
+    : pitch
+) +
+" Hz" +
   "</span><br>" +
 
   "<span class='clarity'>" +
