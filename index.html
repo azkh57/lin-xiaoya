@@ -308,7 +308,12 @@ function updatePitch() {
       audioContext.sampleRate
     );
 if (pitch > 120 && pitch < 600 && clarity > 0.5) {
+ if (
+  pitchHistory.length === 0 ||
+  Math.abs(pitch - pitchHistory[pitchHistory.length - 1]) < 50
+) {
   pitchHistory.push(pitch);
+}
 
   if (pitchHistory.length > 100) {
     pitchHistory.shift();
