@@ -375,17 +375,25 @@ if (recentPitches.length >= 10) {
   change = last - first;
   midChange = middle - first;
 }
-   
-  let toneDirection = "در حال بررسی...";
+let toneDirection = "ثابت";
 
-if (change > 20) {
-  toneDirection = "رو به بالا ↗️";
-} else if (change < -20) {
-  toneDirection = "رو به پایین ↘️";
-}
-   if (midChange < -10 && change > 10) {
-  toneDirection = "پایین و سپس بالا ↘️↗️";
-}
+if (recentPitches.length >= 20) {
+  const first = recentPitches[0];
+  const middle = recentPitches[10];
+  const last = recentPitches[19];
+
+  const firstToMiddle = middle - first;
+  const middleToLast = last - middle;
+
+  if (firstToMiddle > 15 && middleToLast > 10) {
+    toneDirection = "رو به بالا ↗️";
+  } else if (firstToMiddle < -15 && middleToLast < -10) {
+    toneDirection = "رو به پایین ↘️";
+  } else if (firstToMiddle < -15 && middleToLast > 15) {
+    toneDirection = "پایین و سپس بالا ↘️↗️";
+  }
+}   
+   
 result.innerHTML =
 
   "🎧 صدای تو دریافت می‌شود.<br><br>" +
