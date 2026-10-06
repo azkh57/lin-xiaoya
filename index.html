@@ -306,7 +306,15 @@ function updatePitch() {
 
   const clarity =
     detected.clarity;
+  
+if (
+  pitch !== null &&
+  clarity >= 0.5
+) {
 
+  pitchSamples.push(pitch);
+
+}
 
   /*
     محاسبه شدت صدا
