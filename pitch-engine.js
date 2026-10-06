@@ -1,30 +1,23 @@
 // Lin Xiaoya - Pitch Engine
-// Inspired by standard YIN pitch-detection techniques.
-// This file is intentionally independent from the UI.
-
-function median(values) {
-  if (!values || values.length === 0) {
-    return null;
-  }
-
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2;
-  }
-
-  return sorted[middle];
-}
+// YIN-based pitch detection
+// Stage 1: raw pitch tracking for Mandarin tone contour testing.
 
 
 function differenceFunction(buffer, maxTau) {
-  const differences = new Float32Array(maxTau);
+
+  const differences =
+    new Float32Array(maxTau);
 
   for (let tau = 1; tau < maxTau; tau++) {
+
     let sum = 0;
 
-    for (let i = 0; i < buffer.length - tau; i++) {
+    for (
+      let i = 0;
+      i < buffer.length - tau;
+      i++
+    ) {
+
       const difference =
         buffer[i] - buffer[i + tau];
 
@@ -38,32 +31,49 @@ function differenceFunction(buffer, maxTau) {
 }
 
 
-function cumulativeMeanNormalizedDifference(differences) {
-  const result =
-    new Float32Array(differences.length);
+function cumulativeMeanNormalizedDifference(
+  differences
+) {
 
-  result[0] = 1;
+  const normalized =
+    new Float32Array(
+      differences.length
+    );
+
+  normalized[0] = 1;
 
   let runningSum = 0;
 
-  for (let tau = 1; tau < differences.length; tau++) {
+  for (
+    let tau = 1;
+    tau < differences.length;
+    tau++
+  ) {
+
     runningSum += differences[tau];
 
     if (runningSum === 0) {
-      result[tau] = 1;
+
+      normalized[tau] = 1;
+
     } else {
-      result[tau] =
+
+      normalized[tau] =
         differences[tau] *
         tau /
         runningSum;
     }
   }
 
-  return result;
+  return normalized;
 }
 
 
-function parabolicInterpolation(values, index) {
+function parabolicInterpolation(
+  values,
+  index
+) {
+
   if (
     index <= 0 ||
     index >= values.length - 1
@@ -71,9 +81,14 @@ function parabolicInterpolation(values, index) {
     return index;
   }
 
-  const left = values[index - 1];
-  const center = values[index];
-  const right = values[index + 1];
+  const left =
+    values[index - 1];
+
+  const center =
+    values[index];
+
+  const right =
+    values[index + 1];
 
   const denominator =
     left -
@@ -100,13 +115,21 @@ function yinDetect(
 ) {
 
   const minFrequency =
-    options.minFrequency || 80;
+    options.minFrequency ?? 70;
 
   const maxFrequency =
-    options.maxFrequency || 600;
+    options.maxFrequency ?? 500;
 
   const threshold =
-    options.threshold || 0.15;
+    options.threshold ?? 0.15;
+
+
+  /*
+    محدود کردن بازه فرکانس انسانی
+
+    70 Hz  → صدای بم
+    500 Hz → محدوده مناسب برای تست اولیه
+  */
 
   const minTau =
     Math.floor(
@@ -121,12 +144,22 @@ function yinDetect(
       Math.floor(buffer.length / 2)
     );
 
-  if (maxTau <= minTau + 2) {
+
+  if (
+    maxTau <= minTau + 2
+  ) {
+
     return {
       pitch: null,
       clarity: 0
     };
   }
+
+
+  /*
+    مرحله ۱
+    Difference function
+  */
 
   const differences =
     differenceFunction(
@@ -134,80 +167,126 @@ function yinDetect(
       maxTau
     );
 
+
+  /*
+    مرحله ۲
+    Cumulative Mean Normalized Difference
+  */
+
   const normalized =
     cumulativeMeanNormalizedDifference(
       differences
     );
 
-  let tau = -1;
+
+  /*
+    پیدا کردن بهترین نقطه YIN
+
+    برخلاف نسخه قبلی،
+    فقط به اولین عبور از threshold
+    اکتفا نمی‌کنیم.
+
+    بهترین minimum را در کل بازه
+    پیدا می‌کنیم.
+  */
+
+  let bestTau = -1;
+
+  let bestValue =
+    Infinity;
+
 
   for (
-    let i = minTau;
-    i < maxTau;
-    i++
+    let tau = minTau;
+    tau < maxTau;
+    tau++
   ) {
 
+    const value =
+      normalized[tau];
+
     if (
-      normalized[i] < threshold
+      value < bestValue
     ) {
 
-      while (
-        i + 1 < maxTau &&
-        normalized[i + 1] <
-          normalized[i]
-      ) {
-        i++;
-      }
-
-      tau = i;
-      break;
+      bestValue = value;
+      bestTau = tau;
     }
   }
 
-  if (tau === -1) {
+
+  if (
+    bestTau === -1 ||
+    bestValue > threshold
+  ) {
+
     return {
       pitch: null,
       clarity: 0
     };
   }
 
+
+  /*
+    اصلاح دقیق‌تر محل minimum
+  */
+
   const refinedTau =
     parabolicInterpolation(
       normalized,
-      tau
+      bestTau
     );
+
 
   if (
     !Number.isFinite(refinedTau) ||
     refinedTau <= 0
   ) {
+
     return {
       pitch: null,
       clarity: 0
     };
   }
 
+
+  /*
+    تبدیل Period به Frequency
+  */
+
   const pitch =
-    sampleRate / refinedTau;
+    sampleRate /
+    refinedTau;
+
+
+  /*
+    confidence / clarity
+
+    هرچه minimum عمیق‌تر باشد،
+    وضوح تشخیص بیشتر است.
+  */
 
   const clarity =
     Math.max(
       0,
       Math.min(
         1,
-        1 - normalized[tau]
+        1 - bestValue
       )
     );
+
 
   if (
     pitch < minFrequency ||
     pitch > maxFrequency
   ) {
+
     return {
       pitch: null,
       clarity: 0
     };
   }
+
 
   return {
     pitch,
@@ -216,147 +295,64 @@ function yinDetect(
 }
 
 
-function correctOctaveError(
-  pitch,
-  history
+/*
+  Tracker
+
+  در این مرحله عمداً:
+
+  ❌ smoothing نداریم
+  ❌ octave correction نداریم
+  ❌ median history نداریم
+
+  هدف:
+  دیدن حرکت واقعی Pitch است.
+*/
+
+function createPitchTracker(
+  options = {}
 ) {
-
-  if (
-    pitch === null ||
-    history.length < 2
-  ) {
-    return pitch;
-  }
-
-  const reference =
-    median(history);
-
-  if (
-    reference === null ||
-    reference <= 0
-  ) {
-    return pitch;
-  }
-
-  const ratio =
-    pitch / reference;
-
-  // احتمال تشخیص یک اکتاو بالاتر
-  if (
-    ratio > 1.75 &&
-    ratio < 2.25
-  ) {
-    return pitch / 2;
-  }
-
-  // احتمال تشخیص یک اکتاو پایین‌تر
-  if (
-    ratio > 0.44 &&
-    ratio < 0.57
-  ) {
-    return pitch * 2;
-  }
-
-  return pitch;
-}
-
-
-function smoothPitch(
-  pitch,
-  history,
-  windowSize = 5
-) {
-
-  if (pitch === null) {
-    return null;
-  }
-
-  const values = [
-    ...history.slice(-(windowSize - 1)),
-    pitch
-  ];
-
-  return median(values);
-}
-
-
-function createPitchTracker(options = {}) {
 
   const settings = {
+
     minFrequency:
-      options.minFrequency || 80,
+      options.minFrequency ?? 70,
 
     maxFrequency:
-      options.maxFrequency || 600,
+      options.maxFrequency ?? 500,
 
     threshold:
-      options.threshold || 0.15,
+      options.threshold ?? 0.15
 
-    smoothing:
-      options.smoothing || 5,
-
-    historySize:
-      options.historySize || 20
   };
 
-  const history = [];
 
   return {
 
-    detect(buffer, sampleRate) {
+    detect(
+      buffer,
+      sampleRate
+    ) {
 
-      const detected =
-        yinDetect(
-          buffer,
-          sampleRate,
-          settings
-        );
+      return yinDetect(
+        buffer,
+        sampleRate,
+        settings
+      );
 
-      let pitch =
-        detected.pitch;
-
-      if (
-        pitch !== null &&
-        detected.clarity >= 0.5
-      ) {
-
-        pitch =
-          correctOctaveError(
-            pitch,
-            history
-          );
-
-        pitch =
-          smoothPitch(
-            pitch,
-            history,
-            settings.smoothing
-          );
-
-        history.push(pitch);
-
-        if (
-          history.length >
-          settings.historySize
-        ) {
-          history.shift();
-        }
-
-      }
-
-      return {
-        pitch,
-        clarity:
-          detected.clarity
-      };
     },
+
 
     getHistory() {
-      return [...history];
+
+      return [];
+
     },
 
+
     reset() {
-      history.length = 0;
+
+      // در مرحله اول چیزی برای reset وجود ندارد.
+
     }
 
   };
