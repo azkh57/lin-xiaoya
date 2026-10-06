@@ -338,7 +338,7 @@ function createPitchTracker(
       options.threshold ?? 0.15,
 
     maxJumpRatio:
-      options.maxJumpRatio ?? 1.35,
+      options.maxJumpRatio ?? 1.60,
 
     smoothing:
       options.smoothing ?? 5
