@@ -314,6 +314,14 @@ function yinDetect(
   دیدن حرکت واقعی Pitch است.
 */
 
+/*
+  Stage 2 Pitch Tracker
+
+  هدف:
+  جلوگیری از پرش‌های ناگهانی Pitch
+  و اصلاح خطاهای octave / harmonic
+*/
+
 function createPitchTracker(
   options = {}
 ) {
@@ -327,9 +335,18 @@ function createPitchTracker(
       options.maxFrequency ?? 500,
 
     threshold:
-      options.threshold ?? 0.15
+      options.threshold ?? 0.15,
+
+    maxJumpRatio:
+      options.maxJumpRatio ?? 1.35,
+
+    smoothing:
+      options.smoothing ?? 5
 
   };
+
+
+  const history = [];
 
 
   return {
@@ -339,27 +356,190 @@ function createPitchTracker(
       sampleRate
     ) {
 
-      return yinDetect(
-        buffer,
-        sampleRate,
-        settings
-      );
+      const detected =
+        yinDetect(
+          buffer,
+          sampleRate,
+          settings
+        );
+
+
+      let pitch =
+        detected.pitch;
+
+
+      /*
+        اگر Pitch معتبر نیست،
+        چیزی به history اضافه نمی‌کنیم.
+      */
+
+      if (
+        pitch === null ||
+        detected.clarity < 0.5
+      ) {
+
+        return {
+          pitch: null,
+          clarity: detected.clarity
+        };
+
+      }
+
+
+      /*
+        اگر قبلاً Pitch معتبر داشتیم،
+        خطاهای octave را بررسی می‌کنیم.
+      */
+
+      if (history.length > 0) {
+
+        const previous =
+          history[history.length - 1];
+
+
+        const ratio =
+          pitch / previous;
+
+
+        /*
+          یک octave پایین‌تر
+        */
+
+        if (
+          ratio > 0.45 &&
+          ratio < 0.55
+        ) {
+
+          pitch =
+            pitch * 2;
+
+        }
+
+
+        /*
+          یک octave بالاتر
+        */
+
+        else if (
+          ratio > 1.8 &&
+          ratio < 2.2
+        ) {
+
+          pitch =
+            pitch / 2;
+
+        }
+
+
+        /*
+          اگر هنوز پرش خیلی بزرگ بود،
+          این فریم را مشکوک در نظر می‌گیریم.
+        */
+
+        const correctedRatio =
+          pitch / previous;
+
+
+        if (
+          correctedRatio >
+            settings.maxJumpRatio ||
+          correctedRatio <
+            1 / settings.maxJumpRatio
+        ) {
+
+          return {
+
+            pitch: previous,
+
+            clarity:
+              detected.clarity
+
+          };
+
+        }
+
+      }
+
+
+      /*
+        ذخیره Pitch معتبر
+      */
+
+      history.push(pitch);
+
+
+      if (
+        history.length > 20
+      ) {
+
+        history.shift();
+
+      }
+
+
+      /*
+        Median smoothing
+
+        به‌جای میانگین،
+        median انتخاب می‌شود تا
+        پرش‌های شدید اثر کمتری داشته باشند.
+      */
+
+      const recent =
+        history.slice(
+          -settings.smoothing
+        );
+
+
+      const sorted =
+        [...recent].sort(
+          (a, b) => a - b
+        );
+
+
+      const middle =
+        Math.floor(
+          sorted.length / 2
+        );
+
+
+      const smoothed =
+        sorted.length % 2 === 0
+
+          ? (
+              sorted[middle - 1] +
+              sorted[middle]
+            ) / 2
+
+          : sorted[middle];
+
+
+      return {
+
+        pitch:
+          smoothed,
+
+        clarity:
+          detected.clarity
+
+      };
 
     },
 
 
     getHistory() {
 
-      return [];
+      return [...history];
 
     },
 
 
     reset() {
 
-      // در مرحله اول چیزی برای reset وجود ندارد.
+      history.length = 0;
 
     }
 
   };
+
 }
