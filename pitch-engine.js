@@ -180,25 +180,22 @@ function yinDetect(
 
 
   /*
-    پیدا کردن بهترین نقطه YIN
+    پیدا کردن اولین minimum معتبر YIN
 
-    برخلاف نسخه قبلی،
-    فقط به اولین عبور از threshold
-    اکتفا نمی‌کنیم.
+    این روش به YIN استاندارد نزدیک‌تر است.
+    به‌جای انتخاب عمیق‌ترین minimum در کل بازه،
+    اولین minimum معتبر زیر threshold
+    را انتخاب می‌کنیم.
 
-    بهترین minimum را در کل بازه
-    پیدا می‌کنیم.
+    این کار احتمال انتخاب هارمونیک
+    به‌جای فرکانس اصلی را کمتر می‌کند.
   */
 
   let bestTau = -1;
 
-  let bestValue =
-    Infinity;
-
-
   for (
-    let tau = minTau;
-    tau < maxTau;
+    let tau = minTau + 1;
+    tau < maxTau - 1;
     tau++
   ) {
 
@@ -206,13 +203,22 @@ function yinDetect(
       normalized[tau];
 
     if (
-      value < bestValue
+      value < threshold &&
+      value <= normalized[tau - 1] &&
+      value <= normalized[tau + 1]
     ) {
 
-      bestValue = value;
       bestTau = tau;
+      break;
+
     }
+
   }
+
+  let bestValue =
+    bestTau !== -1
+      ? normalized[bestTau]
+      : Infinity;
 
 
   if (
