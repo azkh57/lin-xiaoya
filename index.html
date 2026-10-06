@@ -147,18 +147,7 @@ let audioContext = null;
 let analyser = null;
 let microphone = null;
 let stream = null;
-let detector = null;
-let pitchHistory = [];
-  function median(values) {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1] + sorted[mid]) / 2;
-  }
-
-  return sorted[mid];
-}
+let pitchTracker = null;
 let input = null;
 let animationId = null;
 
@@ -245,27 +234,19 @@ document
 
       microphone.connect(analyser);
 
+pitchTracker =
+  createPitchTracker({
+    minFrequency: 80,
+    maxFrequency: 600,
+    threshold: 0.15,
+    smoothing: 5,
+    historySize: 20
+  });
 
-      /*
-        Pitchy باید دقیقاً همان اندازه
-        ورودی را دریافت کند که detector
-        انتظار دارد.
-      */
-
-      detector =
-        PitchDetector
-          .forFloat32Array(
-            analyser.fftSize
-          );
-
-
-      detector.minVolumeDecibels = -40;
-
-
-      input =
-        new Float32Array(
-          detector.inputLength
-        );
+input =
+  new Float32Array(
+    analyser.fftSize
+  );
 
 
       status.textContent =
@@ -302,7 +283,7 @@ function updatePitch() {
 
   if (
     !analyser ||
-    !detector ||
+    !pitchTracker ||
     !audioContext
   ) {
     return;
@@ -312,26 +293,20 @@ function updatePitch() {
   analyser.getFloatTimeDomainData(input);
 
 
-  const [
-    pitch,
-    clarity
-  ] =
-    detector.findPitch(
+  const detected =
+    pitchTracker.detect(
       input,
       audioContext.sampleRate
     );
-if (pitch > 120 && pitch < 600 && clarity > 0.5) {
- if (
-  pitchHistory.length === 0 ||
-  Math.abs(pitch - pitchHistory[pitchHistory.length - 1]) < 50
-) {
-  pitchHistory.push(pitch);
-}
 
-  if (pitchHistory.length > 100) {
-    pitchHistory.shift();
-  }
-}
+
+  const pitch =
+    detected.pitch;
+
+  const clarity =
+    detected.clarity;
+
+
   /*
     محاسبه شدت صدا
   */
@@ -343,9 +318,7 @@ if (pitch > 120 && pitch < 600 && clarity > 0.5) {
     i < input.length;
     i++
   ) {
-
     sum += input[i] * input[i];
-
   }
 
 
@@ -367,107 +340,52 @@ if (pitch > 120 && pitch < 600 && clarity > 0.5) {
 
 
   /*
-    اگر Pitch معتبر باشد
+    نمایش Pitch
   */
 
- if (
-  pitch > 50 &&
-  pitch < 600 &&
-  clarity > 0.5
-) {
+  if (
+    pitch !== null &&
+    clarity >= 0.5
+  ) {
 
-const recentPitches =
-    pitchHistory
-      .filter(p => p > 120 && p < 600)
-      .slice(-20);
-   
-let change = 0;
-let midChange = 0;
+    result.innerHTML =
 
-if (recentPitches.length >= 10) {
-  const first = recentPitches[0];
-  const middle =
-    recentPitches[Math.floor(recentPitches.length / 2)];
-  const last = recentPitches[recentPitches.length - 1];
+      "🎧 صدای تو دریافت می‌شود...<br><br>" +
 
-  change = last - first;
-  midChange = middle - first;
-}
-let toneDirection = "ثابت";
+      "<span class='pitch'>" +
+      Math.round(pitch) +
+      " Hz" +
+      "</span><br>" +
 
-if (recentPitches.length >= 20) {
-  const first = recentPitches[0];
-  const middle = recentPitches[10];
-  const last = recentPitches[19];
+      "<span class='clarity'>" +
+      "وضوح تشخیص: " +
+      Math.round(clarity * 100) +
+      "%" +
+      "</span><br>" +
 
-  const firstToMiddle = middle - first;
-  const middleToLast = last - middle;
+      "<span class='clarity'>" +
+      "موتور: YIN 🎵" +
+      "</span>";
 
-  if (firstToMiddle > 15 && middleToLast > 10) {
-    toneDirection = "رو به بالا ↗️";
-  } else if (firstToMiddle < -15 && middleToLast < -10) {
-    toneDirection = "رو به پایین ↘️";
-  } else if (firstToMiddle < -15 && middleToLast > 15) {
-    toneDirection = "پایین و سپس بالا ↘️↗️";
+  } else {
+
+    result.innerHTML =
+
+      "🎧 صدای تو دریافت می‌شود...<br>" +
+      "Pitch هنوز واضح تشخیص داده نشده<br><br>" +
+
+      "وضوح: " +
+      Math.round(clarity * 100) +
+      "%";
+
   }
-}   
-   
-result.innerHTML =
-
-  "🎧 صدای تو دریافت می‌شود...<br><br>" +
-
-  "<span class='pitch'>" +
-  Math.round(
-    pitchHistory.length > 0
-      ? (() => {
-          const values = pitchHistory
-            .slice(-10)
-            .sort((a, b) => a - b);
-
-          return values[Math.floor(values.length / 2)];
-        })()
-      : pitch
-  ) +
-  " Hz" +
-  "</span><br>" +
-
-  "<span class='clarity'>" +
-  "وضوح تشخیص: " +
-  Math.round(clarity * 100) +
-  "%" +
-  "</span><br>" +
-
-  "<span class='clarity'>" +
-  "مسیر Pitch: " +
-  toneDirection +
-  "</span>";
-
-}
-
- else {
-
-  result.innerHTML =
-    "🎧 صدای تو دریافت می‌شود...<br>" +
-    "Pitch هنوز واضح تشخیص داده نشده<br><br>" +
-    "Pitch: " +
-    Math.round(pitch) +
-    " Hz<br>" +
-    "وضوح: " +
-    Math.round(clarity * 100) +
-    "%";
-
-}
 
 
   animationId =
     requestAnimationFrame(
       updatePitch
     );
-
 }
-
-
-/* توقف */
 
 document
   .getElementById("stopBtn")
@@ -516,11 +434,11 @@ document
     }
 
 
-    analyser = null;
+   analyser = null;
 
-    detector = null;
+pitchTracker = null;
 
-    input = null;
+input = null;
 
 
     levelBar.style.width =
