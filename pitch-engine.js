@@ -440,23 +440,7 @@ function createPitchTracker(
           pitch / previous;
 
 
-        if (
-          correctedRatio >
-            settings.maxJumpRatio ||
-          correctedRatio <
-            1 / settings.maxJumpRatio
-        ) {
-
-          return {
-
-            pitch: previous,
-
-            clarity:
-              detected.clarity
-
-          };
-
-        }
+       
 
       }
 
